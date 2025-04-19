@@ -134,13 +134,67 @@ helm create nodejs-api
 
 # values.yaml の編集
 cat > nodejs-api/values.yaml << 'EOF'
+# Default values for nodejs-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
 image:
   repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
-  tag: latest
   pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
 service:
+  type: ClusterIP
   port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
 resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+  scaleDownDelaySeconds: 300
+  scaleUpDelaySeconds: 0
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
 EOF
 
 # deployment.yaml の編集
@@ -156,7 +210,7 @@ spec:
     matchLabels: { app: nodejs-api }
   template:
     metadata:
-      labels: { app: nodejs-api }
+      labels: { app: nodejs-api }}
     spec:
       containers:
         - name: api
@@ -240,13 +294,67 @@ dependencies: []
 
 `nodejs-api/values.yaml`
 ```yaml
+# Default values for nodejs-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
 image:
   repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
-  tag: latest
   pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
 service:
+  type: ClusterIP
   port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
 resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+  scaleDownDelaySeconds: 300
+  scaleUpDelaySeconds: 0
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
 ```
 
 `nodejs-api/templates/deployment.yaml`
@@ -262,7 +370,7 @@ spec:
     matchLabels: { app: nodejs-api }
   template:
     metadata:
-      labels: { app: nodejs-api }
+      labels: { app: nodejs-api }}
     spec:
       containers:
         - name: api
