@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-api
+  labels: { app: nodejs-api }
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+spec:
+  type: ClusterIP
+  selector: { app: nodejs-api }
+  ports:
+    - port: 8000
+      targetPort: 8000

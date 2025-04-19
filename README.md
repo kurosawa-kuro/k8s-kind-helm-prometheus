@@ -126,18 +126,110 @@ http://localhost:3000  (user: admin / pass: admin)
 
 ## 4. Node.js API 用 Helm チャート
 
-```
-charts/
-└─ nodejs-api/
-   ├─ Chart.yaml
-   ├─ values.yaml
-   └─ templates/
-        ├─ deployment.yaml
-        ├─ service.yaml
-        └─ servicemonitor.yaml
+### 4-1. Helm チャートの作成
+
+```bash
+# Helm チャートの作成
+helm create nodejs-api
+
+# values.yaml の編集
+cat > nodejs-api/values.yaml << 'EOF'
+image:
+  repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  port: 8000
+resources: {}
+EOF
+
+# deployment.yaml の編集
+cat > nodejs-api/templates/deployment.yaml << 'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nodejs-api.fullname" . }}
+  labels: { app: nodejs-api }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: nodejs-api }
+  template:
+    metadata:
+      labels: { app: nodejs-api }
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+EOF
+
+# service.yaml の編集
+cat > nodejs-api/templates/service.yaml << 'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-api
+  labels: { app: nodejs-api }
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+spec:
+  type: ClusterIP
+  selector: { app: nodejs-api }
+  ports:
+    - port: 8000
+      targetPort: 8000
+EOF
+
+# servicemonitor.yaml の作成
+cat > nodejs-api/templates/servicemonitor.yaml << 'EOF'
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nodejs-api
+  labels:
+    release: kps   # kube-prometheus-stack リリース名
+spec:
+  selector:
+    matchLabels:
+      app: nodejs-api
+  endpoints:
+    - port: 8000
+      path: /metrics
+      interval: 15s
+EOF
+
+# 不要なファイルの削除
+rm -f nodejs-api/templates/ingress.yaml nodejs-api/templates/hpa.yaml nodejs-api/templates/notes.txt nodejs-api/templates/test-connection.yaml
 ```
 
-`charts/nodejs-api/Chart.yaml`
+### 4-2. Helm チャートの構造
+
+作成されたHelmチャートの構造は以下のようになります：
+
+```
+nodejs-api/
+├─ Chart.yaml
+├─ values.yaml
+└─ templates/
+     ├─ deployment.yaml
+     ├─ service.yaml
+     ├─ servicemonitor.yaml
+     ├─ _helpers.tpl
+     ├─ NOTES.txt
+     └─ _serviceaccount.yaml
+```
+
+`nodejs-api/Chart.yaml`
 ```yaml
 apiVersion: v2
 name: nodejs-api
@@ -146,7 +238,7 @@ appVersion: "1.0.0"
 dependencies: []
 ```
 
-`charts/nodejs-api/values.yaml`
+`nodejs-api/values.yaml`
 ```yaml
 image:
   repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
@@ -157,7 +249,7 @@ service:
 resources: {}
 ```
 
-`charts/nodejs-api/templates/deployment.yaml`
+`nodejs-api/templates/deployment.yaml`
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -186,7 +278,7 @@ spec:
             periodSeconds: 10
 ```
 
-`charts/nodejs-api/templates/service.yaml`
+`nodejs-api/templates/service.yaml`
 ```yaml
 apiVersion: v1
 kind: Service
@@ -204,7 +296,7 @@ spec:
       targetPort: 8000
 ```
 
-`charts/nodejs-api/templates/servicemonitor.yaml`
+`nodejs-api/templates/servicemonitor.yaml`
 ```yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -243,7 +335,7 @@ kind load docker-image 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/contain
 ### 5‑2. Helm リリース
 
 ```bash
-helm install api charts/nodejs-api --namespace monitoring
+helm install api nodejs-api --namespace monitoring
 ```
 
 ---

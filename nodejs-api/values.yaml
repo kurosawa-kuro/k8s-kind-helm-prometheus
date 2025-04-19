@@ -1,0 +1,7 @@
+image:
+  repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  port: 8000
+resources: {}

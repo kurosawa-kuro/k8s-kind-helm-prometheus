@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nodejs-api
+  labels:
+    release: kps   # kube-prometheus-stack リリース名
+spec:
+  selector:
+    matchLabels:
+      app: nodejs-api
+  endpoints:
+    - port: 8000
+      path: /metrics
+      interval: 15s
