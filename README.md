@@ -465,24 +465,77 @@ curl http://localhost:8000/healthz
 
 ```bash
 # Prometheus Targets
-kubectl port-forward svc/kps-prometheus 9090 -n monitoring &
+kubectl port-forward svc/kps-kube-prometheus-stack-prometheus 9090 -n monitoring &
 open http://localhost:9090/targets   # nodejs-api が UP になっているか確認
 ```
 
-### 6-3. Grafana ダッシュボード
+### 6-3. Grafana での監視設定
 
+1. Grafanaへのアクセス
 ```bash
 # ポートフォワーディングを使用する場合（別のターミナルで実行）
 kubectl port-forward svc/kps-grafana 3000:80 -n monitoring &
-# ブラウザで http://localhost:3000 にアクセス
+# ブラウザで http://localhost:3000 にアクセス（user: admin / pass: admin）
 ```
+
+2. Node.js APIの監視メトリクス
+
+以下のメトリクスを「Explore」画面で確認できます：
+
+- HTTPリクエスト数の確認
+```promql
+rate(http_requests_total[5m])
+```
+
+- レスポンスタイムの確認
+```promql
+rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+```
+
+- メモリ使用量の確認
+```promql
+nodejs_memory_usage_bytes
+```
+
+- CPU使用時間の確認
+```promql
+rate(process_cpu_user_seconds_total[5m])
+```
+
+3. ダッシュボードの作成手順
+
+a. 新規ダッシュボード作成
+   - 左側メニュー → 「+ New Dashboard」をクリック
+   - 「Add visualization」をクリック
+   - データソースで「Prometheus」を選択
+
+b. パネルの追加（以下は推奨メトリクス）
+   - リクエスト数パネル
+     - メトリクス: `rate(http_requests_total[5m])`
+     - パネルタイプ: Time series
+     - 説明: 5分間の平均リクエスト数
+
+   - レスポンスタイムパネル
+     - メトリクス: `rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])`
+     - パネルタイプ: Time series
+     - 説明: 5分間の平均レスポンスタイム
+
+   - メモリ使用量パネル
+     - メトリクス: `nodejs_memory_usage_bytes`
+     - パネルタイプ: Time series
+     - 説明: Node.jsプロセスのメモリ使用量
+
+   - CPU使用率パネル
+     - メトリクス: `rate(process_cpu_user_seconds_total[5m])`
+     - パネルタイプ: Time series
+     - 説明: 5分間のCPU使用率
 
 ### 6-4. Node.js API のエンドポイント
 
 Node.js API には以下のエンドポイントが実装されています：
 
 - `/healthz` - Kubernetes ヘルスチェック用エンドポイント
-- `/metrics` - Prometheus メトリクスエンドポイント
+- `/metrics` - Prometheus メトリクスエンドポイント（アプリケーションの各種メトリクスを提供）
 - `/api-docs` - Swagger UI ドキュメント
 - `/` - ルートエンドポイント（ヘルスチェック）
 
