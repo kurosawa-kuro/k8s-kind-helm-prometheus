@@ -12,7 +12,7 @@
 
 | 項目 | バージョン例 |
 |------|--------------|
-| OS   | Ubuntu 22.04 / Amazon Linux 2023 |
+| OS   | Ubuntu 22.04 / Amazon Linux 2023 |
 | kind | v0.23.0 |
 | kubectl | v1.29.x |
 | Helm | v3.14.x |
@@ -67,7 +67,7 @@ helm repo update
 
 ---
 
-## 3. Prometheus Operator スタックのインストール
+## 3. Prometheus Operator スタックのインストール
 
 > **namespace:** `monitoring`
 
@@ -85,7 +85,39 @@ helm install kps prometheus-community/kube-prometheus-stack \
 
 > ⏱ **所要 2–3 分**
 
-Grafana ログイン:
+### Grafana へのアクセス方法
+
+Grafana にアクセスするには、以下のいずれかの方法を使用します：
+
+#### 方法1: ポートフォワーディング（推奨）
+
+```bash
+# 別のターミナルで実行
+kubectl port-forward svc/kps-grafana 3000:80 -n monitoring
+```
+
+そして、ブラウザで以下のURLにアクセスします：
+```
+http://localhost:3000  (user: admin / pass: admin)
+```
+
+#### 方法2: NodePort経由（Kindクラスタの設定に依存）
+
+Kindクラスタの設定で`extraPortMappings`が正しく設定されている場合、以下のURLでアクセスできます：
+```
+http://localhost:3000  (user: admin / pass: admin)
+```
+
+#### 方法3: リモートサーバーからのアクセス
+
+リモートサーバー上で実行している場合、SSHポートフォワーディングを使用します：
+
+```bash
+# ローカルマシンから実行
+ssh -L 3000:localhost:3000 ユーザー名@リモートサーバーのIP
+```
+
+そして、ローカルマシンのブラウザで以下のURLにアクセスします：
 ```
 http://localhost:3000  (user: admin / pass: admin)
 ```
@@ -196,7 +228,7 @@ spec:
 
 ## 5. Node.js API デプロイ
 
-### 5‑1. (オプション) ECR へログイン & イメージを kind に読み込む
+### 5‑1. (オプション) ECR へログイン & イメージを kind に読み込む
 
 ```bash
 aws ecr get-login-password --region ap-northeast-1 | \
@@ -226,8 +258,10 @@ kubectl get pods -n monitoring -l app=nodejs-api
 kubectl port-forward svc/kps-prometheus 9090 -n monitoring &
 open http://localhost:9090/targets   # nodejs-api が UP になっているか確認
 
-# Grafana ダッシュボード (Node ポート 3000)
-open http://localhost:3000
+# Grafana ダッシュボード
+# ポートフォワーディングを使用する場合（別のターミナルで実行）
+kubectl port-forward svc/kps-grafana 3000:80 -n monitoring &
+# ブラウザで http://localhost:3000 にアクセス
 ```
 
 ---
@@ -250,5 +284,5 @@ kind delete cluster --name monitoring
 
 ### 完了 🎉
 
-これで **Helm と Prometheus Operator、Node.js API の ServiceMonitor 連携** までを kind 上で検証できました。継続的なチューニングや GitOps 化が必要になった際は、`values.yaml` と `charts/` ディレクトリをそのまま Git リポジトリへ push し、Argo CD にアプリケーションとして登録するだけで本番移行の土台になります。
+これで **Helm と Prometheus Operator、Node.js API の ServiceMonitor 連携** までを kind 上で検証できました。継続的なチューニングや GitOps 化が必要になった際は、`values.yaml` と `charts/` ディレクトリをそのまま Git リポジトリへ push し、Argo CD にアプリケーションとして登録するだけで本番移行の土台になります。
 
