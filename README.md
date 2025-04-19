@@ -144,7 +144,7 @@ image:
   repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "v1.0.4"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -304,7 +304,7 @@ image:
   repository: 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "v1.0.4"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -434,10 +434,10 @@ spec:
 aws ecr get-login-password --region ap-northeast-1 | \
   docker login --username AWS --password-stdin 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com
 
-docker pull 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000:latest
+docker pull 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000:v1.0.4
 
 # kind 内にイメージを転送
-kind load docker-image 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000:latest --name monitoring
+kind load docker-image 986154984217.dkr.ecr.ap-northeast-1.amazonaws.com/container-nodejs-api-8000:v1.0.4 --name monitoring
 ```
 
 ### 5‑2. Helm リリース
@@ -450,19 +450,41 @@ helm install api nodejs-api --namespace monitoring
 
 ## 6. 動作確認
 
+### 6-1. Node.js API の確認
+
 ```bash
 # Pod 状態
 kubectl get pods -n monitoring -l app=nodejs-api
 
+# ポートフォワーディングでAPIにアクセス
+kubectl port-forward svc/nodejs-api 8000:8000 -n monitoring &
+curl http://localhost:8000/healthz
+```
+
+### 6-2. Prometheus の確認
+
+```bash
 # Prometheus Targets
 kubectl port-forward svc/kps-prometheus 9090 -n monitoring &
 open http://localhost:9090/targets   # nodejs-api が UP になっているか確認
+```
 
-# Grafana ダッシュボード
+### 6-3. Grafana ダッシュボード
+
+```bash
 # ポートフォワーディングを使用する場合（別のターミナルで実行）
 kubectl port-forward svc/kps-grafana 3000:80 -n monitoring &
 # ブラウザで http://localhost:3000 にアクセス
 ```
+
+### 6-4. Node.js API のエンドポイント
+
+Node.js API には以下のエンドポイントが実装されています：
+
+- `/healthz` - Kubernetes ヘルスチェック用エンドポイント
+- `/metrics` - Prometheus メトリクスエンドポイント
+- `/api-docs` - Swagger UI ドキュメント
+- `/` - ルートエンドポイント（ヘルスチェック）
 
 ---
 
